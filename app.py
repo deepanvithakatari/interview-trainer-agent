@@ -264,12 +264,24 @@ if st.session_state.stage == "interviewing":
         # Merge personalized text back with original metadata (ideal_answer etc.)
         batch = []
         for base, p in zip(base_questions, personalized):
+            tailored_q = p.get("question", "").strip()
+            # Sanity check: a real question is more than a couple words.
+            # If personalization got corrupted/truncated, fall back to the
+            # original retrieved question instead of showing garbage.
+            if len(tailored_q.split()) < 5:
+                tailored_q = base["question"]
+                why = "Selected from the role-relevant question bank."
+                testing = base["type"]
+            else:
+                why = p.get("why_this_question", "")
+                testing = p.get("testing", "")
+
             batch.append({
-                "question": p.get("question", base["question"]),
+                "question": tailored_q,
                 "type": base["type"],
                 "ideal_answer": base.get("ideal_answer", ""),
-                "why": p.get("why_this_question", ""),
-                "testing": p.get("testing", ""),
+                "why": why,
+                "testing": testing,
                 "original_question": base["question"],
             })
         st.session_state.question_batch = batch
